@@ -1,6 +1,7 @@
+# api/urls.py
 from django.urls import path
-from .views import LLMQueryAPIView
+from .views import SensorQueryAPIView
 
 urlpatterns = [
-    path('ask-llm/', LLMQueryAPIView.as_view(), name='ask-llm'),
+    path('sensor-query/', SensorQueryAPIView.as_view(), name='sensor_query'),
 ]

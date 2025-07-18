@@ -1,27 +1,25 @@
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from models.documents import Document
 
-# بارگیری مدل بردارساز (جمله به وکتور)
-model = SentenceTransformer('all-MiniLM-L6-v2')
+EMBEDDING_DIM = 384
+MODEL = SentenceTransformer('all-MiniLM-L6-v2')
 
-# فرض: داده نمونه برای ایندکس اولیه
-documents = [
-    "دستورالعمل بهره‌برداری از چاه گاز فاز ۲ پارس جنوبی",
-    "گزارش عملکرد کمپرسور ایستگاه غربی",
-    "آموزش تعمیرات پمپ‌های نفتی",
-]
+class VectorSearchEngine:
+    def __init__(self):
+        # بازیابی اسناد فعال از دیتابیس و آماده سازی ایندکس
+        docs = Document.objects.all()
+        texts = [d.text for d in docs]
+        embeddings = np.array([MODEL.encode(t) for t in texts]).astype('float32')
+        self.texts_map = dict(enumerate(docs))
+        self.index = faiss.IndexFlatL2(EMBEDDING_DIM)
+        if embeddings.shape[0]:
+            self.index.add(embeddings)
+    
+    def search(self, query, top_k=5):
+        q_vec = MODEL.encode([query]).astype('float32')
+        D, I = self.index.search(q_vec, top_k)
+        return [self.texts_map[i] for i in I[0]]
 
-# بردارسازی اسناد
-doc_vectors = np.array(model.encode(documents)).astype('float32')
-
-# ساخت ایندکس faiss
-index = faiss.IndexFlatL2(doc_vectors.shape[1])
-index.add(doc_vectors)
-
-def search_documents(query, top_k=3):
-    """جستجوی اسناد نزدیک به پرسش بر اساس شباهت معنایی"""
-    q_vec = model.encode([query]).astype('float32')
-    D, I = index.search(q_vec, top_k)
-    results = [documents[i] for i in I[0]]
-    return results
+# این کلاس را می توان در startup هر سرور یا در بازسازی ایندکس فراخوانی کرد.

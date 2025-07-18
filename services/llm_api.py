@@ -1,8 +1,18 @@
-# فراخوانی مدل LLM (مثلاً OpenAI)
+import openai
+
+openai.api_key = "کلید_API_خودتان"
+
 def generate_answer(question, context_docs):
-    """
-    ارسال پرسش و اسناد به API مدل زبانی و دریافت پاسخ
-    """
-    # TODO: فراخوانی واقعی API مدل
-    # نمونه پاسخ اولیه تا اتصال واقعی
-    return "این پاسخ نمونه است که بر اساس اسناد برگردانده شده."
+    """ارسال پرسش و اسناد به GPT و دریافت پاسخ"""
+    prompt = (
+        "بر اساس اسناد زیر به پرسش پاسخ بده:\n\n"
+        + "\n\n".join(context_docs)
+        + "\n\nپرسش: " + question + "\nپاسخ:"
+    )
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=512,
+        temperature=0.2,
+    )
+    return response.choices[0].message["content"].strip()

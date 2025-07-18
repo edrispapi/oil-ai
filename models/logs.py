@@ -1,8 +1,9 @@
+# models/logs.py
 from django.db import models
 
 class APILog(models.Model):
-    user_id = models.IntegerField()
-    endpoint = models.CharField(max_length=120)
+    event = models.CharField(max_length=120)
+    user_id = models.IntegerField(null=True)
     request_data = models.JSONField()
     response_data = models.JSONField()
     status_code = models.IntegerField()

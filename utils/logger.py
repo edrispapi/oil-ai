@@ -1,14 +1,26 @@
 from models.logs import APILog
+from kafka import KafkaProducer
+import os, json, traceback
 
-def log_request(user, endpoint, request_data, response_data, status_code):
+producer = KafkaProducer(
+    bootstrap_servers=['kafka:9092'],
+    value_serializer=lambda x: json.dumps(x).encode('utf-8')
+)
+
+def log_operation(event, data):
     try:
         APILog.objects.create(
-            user=user,
-            endpoint=endpoint,
-            request_data=request_data,
-            response_data=response_data,
-            status_code=status_code,
+            user_id=data.get("user_id"),
+            endpoint=event,
+            request_data=data,
+            response_data={},
+            status_code=200,
         )
+        producer.send('system-logs', {'event': event, 'data': data})
     except Exception as e:
-        # جلوگیری از ایجاد اشکال در اجرای اصلی هنگام بروز خطا در لاگ‌گیری
-        pass
+        print("Logging error:", str(e))
+
+def log_exception(component, err_message):
+    trace = traceback.format_exc()
+    producer.send('system-logs', {'event': 'exception', 'component': component, 'trace': trace, 'error': err_message})
+    # In production, optionally push to alerting systems, Sentry etc.
